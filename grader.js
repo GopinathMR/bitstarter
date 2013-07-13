@@ -37,13 +37,13 @@ var checkHtmlFile = function(htmlfileContent, checksfile) {
 };
 
 var assertUrlExists = function(urlpath, executeFn, checkFile) {
-    return rest.head(urlpath).on('complete', function(result) {
+    return rest.get(urlpath).on('complete', function(result) {
 	if (result instanceof Error) {
 	    console.log('url is not valid');
 	    return false;
 	} else {
 	    console.log('url is valid ');
-	    executeFn(result.data, checkFile);
+	    executeFn(result, checkFile);
 	    return true;
 	}
 	});

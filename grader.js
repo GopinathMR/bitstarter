@@ -42,7 +42,6 @@ var assertUrlExists = function(urlpath, executeFn, checkFile) {
 	    console.log('url is not valid');
 	    return false;
 	} else {
-	    console.log('url is valid ');
 	    executeFn(result, checkFile);
 	    return true;
 	}

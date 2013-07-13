@@ -3,6 +3,7 @@
 var fs=require('fs');
 var program=require('commander');
 var cheerio=require('cheerio');
+var rest=require('restler');
 var HTMLFILE_DEFAULT="index.html";
 var CHECKSFILE_DEFAULT="checks.json";
 
@@ -16,16 +17,16 @@ var assertFileExists = function(infile) {
 	
 };
 
-var cheerioHtmlFile = function(htmlFile) {
-    return cheerio.load(fs.readFileSync(htmlFile));
+var cheerioHtmlFile = function(htmlFileContent) {
+    return cheerio.load(htmlFileContent);
 };
 
 var loadChecks = function(checksfile) {
     return JSON.parse(fs.readFileSync(checksfile));
 };
 
-var checkHtmlFile = function(htmlfile, checksfile) {
-    $ = cheerioHtmlFile(htmlfile);
+var checkHtmlFile = function(htmlfileContent, checksfile) {
+    $ = cheerioHtmlFile(htmlfileContent);
     var checks = loadChecks(checksfile);
     var out = {};
     for (var ii in checks) {
@@ -35,17 +36,40 @@ var checkHtmlFile = function(htmlfile, checksfile) {
     return out;
 };
 
+var assertUrlExists = function(urlpath, executeFn, checkFile) {
+    return rest.head(urlpath).on('complete', function(result) {
+	if (result instanceof Error) {
+	    console.log('url is not valid');
+	    return false;
+	} else {
+	    console.log('url is valid ');
+	    executeFn(result.data, checkFile);
+	    return true;
+	}
+	});
+//    return true
+};
+
 var clone = function(fn) {
     return fn.bind({});
+};
+
+var executeValidation = function(htmlFileContent, checkFile) {
+    var checkJson = checkHtmlFile(htmlFileContent, checkFile);
+    var outJson = JSON.stringify(checkJson, null, 4);
+    console.log(outJson);    
 };
 
 if (require.main == module) {
     program.option('-c, --checks <check_file>','Path to checks.json', clone(assertFileExists), CHECKSFILE_DEFAULT)
     .option('-f, --file <html_file>', 'Path to index.html', clone(assertFileExists), HTMLFILE_DEFAULT)
+    .option('-u, --url <html_url>', 'URL to index.html')
     .parse(process.argv);
-    var checkJson = checkHtmlFile(program.file, program.checks);
-    var outJson = JSON.stringify(checkJson, null, 4);
-    console.log(outJson);
+    if (program.url) {
+	assertUrlExists(program.url, executeValidation, program.checks);
+    } else {
+	executeValidation(fs.readFileSync(program.file), program.checks);
+    }
 } else {
     exports.checkHtmlFile = checkHtmlFile;
 }
